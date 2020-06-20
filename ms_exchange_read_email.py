@@ -7,8 +7,6 @@ CBExchange -- read/delete emails based on position/mailId in the mailbox. Return
 @contact:    smathew@paperlesswarehousing.com.au
 """
 
-asdfasdfasdf
-
 
 import sys
 from exchangelib import Credentials, Account
