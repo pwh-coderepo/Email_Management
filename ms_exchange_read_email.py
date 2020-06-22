@@ -14,8 +14,8 @@ from exchangelib import Credentials, Account
 __version__ = 1.0
 __date__ = '2020-06-11'
 __updated__ = '2020-06-22'
-TESTRUN = True
-LIMIT = 10
+TESTRUN = False
+LIMIT = 100
 USERNAME, PASSWORD = "support@paperlesswarehousing.com.au", "Paperless01"
 POS_ADJUSTMENT = True  # Allow position number passed to start with 1 rather than 0
 
@@ -76,6 +76,14 @@ class Exchange:
                     return False, "Failed to delete email with subject: {}".format(email.subject)
 
 
+def adjust_position(_pos):
+    if POS_ADJUSTMENT:
+        _pos = int(_pos) - 1
+        if _pos < 0:
+            _pos = 0
+            logging.warning("Position Number found to be less than 0. Hence adjusted to 0")
+    return _pos
+
 def validate_arguments(_args):
     """
     This function validates the input arguments
@@ -83,13 +91,13 @@ def validate_arguments(_args):
     :return: True/False, Message depending on the outcome of the validation
     """
 
-    _args[1] = str(_args[1])
+    # _args[1] = str(_args[1])
 
     if len(_args) != 2:
         return False, "Please pass exactly 2 arguments"
     elif _args[0] not in ["-r", "-d"]:
         return False, "Please pass command argument. -r for reading email and -d for deleting email"
-    elif _args[0] == "-r" and (not _args[1].isnumeric() or int(_args[1]) < 0):
+    elif _args[0] == "-r" and (not str(_args[1]).isnumeric() or int(_args[1]) < 0):
         return False, "Please pass a positive number as the second argument corresponding " \
                       "to the position of email in the mailbox"
     elif _args[0] == "-d" and len(_args[1]) < 100:
@@ -136,17 +144,20 @@ if __name__ == "__main__":
                 # Read Email and return emailId
                 if args[0] == "-r":
                     # Allow position number passed to start with 1 rather than 0
-                    if POS_ADJUSTMENT:
-                        args[1] = int(args[1]) - 1
+                    args[1] = adjust_position(args[1])
+
                     email_subject, email_body, email_id = account.get_email_body(int(args[1]))
-                    logging.info(email_id)
+                    logging.info("Email ID:{}".format(email_id))
+                    logging.info("Email Subject:{}".format(email_subject))
+                    # logging.info(email_id)
                     print("PYTHON.EMAILID={};".format(email_id))
                     print("PYTHON.BODY={}".format(email_body))
 
                 # Delete Email
                 elif args[0] == "-d":
                     response, message = account.delete_email(args[1])
-                    logging.info(response, message)
+                    logging.info("Email Delete Status: {}".format(response))
+                    logging.info("Message:{}".format(message))
                     print("PYTHON.DELETE={};".format(response))
 
             else:
