@@ -1,5 +1,3 @@
-#!/usr/local/bin/python3.7
-# encoding: utf-8
 """
 CBExchange -- read/delete emails based on position/mailId in the mailbox. Return email body
 @author:    Shanto Mathew
