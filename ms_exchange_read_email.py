@@ -7,21 +7,22 @@ CBExchange -- read/delete emails based on position/mailId in the mailbox. Return
 @contact:    smathew@paperlesswarehousing.com.au
 """
 
-
+import logging
+import pathlib
 import sys
+
 from exchangelib import Credentials, Account
 
-__all__ = []
-__version__ = 0.1
+__version__ = 1.0
 __date__ = '2020-06-11'
-__updated__ = '2020-06-19'
+__updated__ = '2020-06-22'
 TESTRUN = True
 LIMIT = 10
 USERNAME, PASSWORD = "support@paperlesswarehousing.com.au", "Paperless01"
 POS_ADJUSTMENT = True  # Allow position number passed to start with 1 rather than 0
 
 
-class Exchange():
+class Exchange:
     def __init__(self, username, password):
         """
         Class initiation. It logs in to the MS Exchange mailbox.
@@ -91,8 +92,8 @@ def validate_arguments(_args):
     elif _args[0] not in ["-r", "-d"]:
         return False, "Please pass command argument. -r for reading email and -d for deleting email"
     elif _args[0] == "-r" and (not _args[1].isnumeric() or int(_args[1]) < 0):
-        return False, "Please pass a positive number as the second argument corresponding to the position of email in " \
-                      "the mailbox "
+        return False, "Please pass a positive number as the second argument corresponding " \
+                      "to the position of email in the mailbox"
     elif _args[0] == "-d" and len(_args[1]) < 100:
         return False, "The emailId looks inaccurate. Please check that and try again. It usually is an alphanumeric " \
                       "string with length of around 151 characters "
@@ -100,15 +101,37 @@ def validate_arguments(_args):
         return True, "Validation passed"
 
 
+def set_logger():
+    """
+    This module just initiates the Python Logger for logging
+    :return: None
+    """
+    # Set the log level of exchangelib to WARNING so that it won't write naive datetime messages into logs.
+    logging.getLogger("exchangelib").setLevel(logging.WARNING)
+
+    cur_file_path = str(pathlib.Path(__file__).absolute())
+
+    log_file_path = cur_file_path[:-3] + ".log"
+    # print("log_file_path: " + log_file_path)
+
+    logging.basicConfig(level=logging.INFO, filename=log_file_path,
+                        format='%(name)s - %(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+                        datefmt="%Y-%m-%d %H:%M:%S")
+
+    logging.info(25 * '=' + "SCRIPT STARTED" + 25 * '=')
+
+
 if __name__ == "__main__":
     if __name__ == "__main__":
         try:
             if TESTRUN:
-                # args = ["-r", 1]
-                args = ["-d", "AAMkAGQ5YWRlMGM5LTI0MGEtNDJjYS05ODMzLWZkYzhhOWVlYTkxYQBGAAAAAACWis8uQyOEQ6Oh81UzsRPSBwDA3bYyBaXeR7N4oHIE1yL1AAAAAAEMAADA3bYyBaXeR7N4oHIE1yL1AAADdLqbAAA="]
+                args = ["-r", 0]
+                # args = ["-d", "AAMkAGQ5YWRlMGM5LTI0MGEtNDJjYS05ODMzLWZkYzhhOWVlYTkxYQBGAAAAAACWis8uQyOEQ6Oh81UzsRPSBwDA3bYyBaXeR7N4oHIE1yL1AAAAAAEMAADA3bYyBaXeR7N4oHIE1yL1AAADdLqbAAA="]
 
             else:
                 args = sys.argv[1:]
+
+            set_logger()
             valid, message = validate_arguments(args)
             if valid:
                 account = Exchange(USERNAME, PASSWORD)
@@ -118,22 +141,24 @@ if __name__ == "__main__":
                     if POS_ADJUSTMENT:
                         args[1] = int(args[1]) - 1
                     email_subject, email_body, email_id = account.get_email_body(int(args[1]))
-                    print(email_subject, email_body, email_id)
+                    logging.info(email_id)
+                    print("PYTHON.EMAILID={};".format(email_id))
+                    print("PYTHON.BODY={}".format(email_body))
+
                 # Delete Email
                 elif args[0] == "-d":
                     response, message = account.delete_email(args[1])
-                    print(response, message)
+                    logging.info(response, message)
+                    print("PYTHON.DELETE={};".format(response))
+
             else:
-                print("Validation of arguments Failed with message: {}".format(message))
+                logging.warning("Validation of arguments Failed with message: {}".format(message))
         except Exception as e:
-            import traceback
-
-            print("Script finished with Error/Exception")
-            traceback.print_exc()
-
+            logging.exception("Script finished with Error/Exception")
+            raise
 
         else:
-            print("Script finished without Error/Exception")
+            logging.info("Script finished without Error/Exception")
         finally:
-            pass
+            logging.info(25 * '=' + "SCRIPT ENDED" + 25 * '=')
             # account.protocol.close()
